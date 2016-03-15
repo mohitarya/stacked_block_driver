@@ -4,6 +4,8 @@
 #include <linux/genhd.h>
 #include <linux/blkdev.h>
 #include <linux/export.h>
+#include <linux/bio.h>
+#include <linux/list.h>
 #include "helper_fun.h"
 #include "sdfdrv_main.h"
 
@@ -14,9 +16,30 @@ static struct block_device_operations blk_fops = {
     .owner = THIS_MODULE,
 };
 
+static void end_io(struct bio *bio, int error)
+{
+    bio_put(bio);
+}
+
+struct bio *prepare_bio(struct bio *bio)
+{
+    struct bio *bio_clone;
+    //clone bio
+    bio_clone = bio_clone(bio, GFP_KERNEL);
+    if(bio_clone == NULL){
+        printk("Can not clone the bio\n");
+        retutn NULL;
+    }
+    bio_clone->bi_bdev = mda->bd_dev;
+    bio_clone->bi_end_io = end_io;
+    return bio_clone;
+}
+
 void make_req_fun(struct request_queue *q, struct bio *bio)
 {
-    prepare_bio();
+    struct bio *bio_clone;
+    bio_clone = prepare_bio(bio);
+    
 }
 
 struct mda_dev {
